@@ -11,6 +11,7 @@
 # 9 apply hough transform to find the lanes
 # 10 apply the pipeline you developed to the challenge videos
 # 11 You should submit your code
+from datetime import datetime
 import random
 
 import matplotlib.pyplot as plt
@@ -201,6 +202,8 @@ def CannyEdgeDetection(image, high, low):
     non_maximum_suppression = NonMaximumSuppression(sobel, theta)
     double_thresholding = DoubleThresholding(non_maximum_suppression, high, low)
     edge_detection = HysteresisEdgeTracking(double_thresholding)
+    # plt.imshow(edge_detection,cmap='gray')
+    # plt.show()
     return edge_detection
 
 
@@ -226,7 +229,8 @@ def Sobel(image):
 
 # step 7 helper
 def NonMaximumSuppression(image, theta):
-    global r
+    a = 0
+    b = 0
     angle = theta * 180. / np.pi
     angle[angle < 0] += 180
     height, width = image.shape
@@ -236,22 +240,22 @@ def NonMaximumSuppression(image, theta):
         for w in range(1, width - 1):
 
             if (0 <= angle[h, w] < 22.5) or (157.5 <= angle[h, w] <= 180):
-                q = image[h, w + 1]
-                r = image[h, w - 1]
+                a = image[h, w + 1]
+                b = image[h, w - 1]
                 # angle 45
             elif 22.5 <= angle[h, w] < 67.5:
-                q = image[h + 1, w + 1]
-                r = image[h - 1, w - 1]
+                a = image[h + 1, w + 1]
+                b = image[h - 1, w - 1]
                 # angle 90
             elif 67.5 <= angle[h, w] < 112.5:
-                q = image[h + 1, w]
-                r = image[h - 1, w]
+                a = image[h + 1, w]
+                b = image[h - 1, w]
                 # angle 135
             elif 112.5 <= angle[h, w] < 157.5:
-                q = image[h - 1, w + 1]
-                r = image[h + 1, w - 1]
+                a = image[h - 1, w + 1]
+                b = image[h + 1, w - 1]
 
-            if q <= image[h, w] >= r:
+            if a <= image[h, w] >= b:
                 out[h, w] = image[h, w]
             else:
                 out[h, w] = 0
@@ -288,7 +292,6 @@ def HysteresisEdgeTracking(image, size=3):
     return out
 
 
-# step 9
 def HoughTransofrm(image):
     minLineLength = 150
     # maxLineGap = 5
@@ -315,17 +318,18 @@ def HoughTransofrm(image):
             x2 = int(x0 - 1000 * (-b))
             y2 = int(y0 - 1000 * (a))
 
-            cv2.line(out, (x1, y1), (x2, y2), 255, 1)
+            cv2.line(out, (x1, y1), (x2, y2), 255, 9)
     # plt.imshow(out, cmap='gray')
     # plt.show()
 
     return out
 
 
+# step 9
 def line_detection_vectorized(image, edge_image, num_rhos=180, num_thetas=180, t_count=100):
     out = np.copy(image)
     edge_height, edge_width = edge_image.shape[:2]
-    edge_height_half, edge_width_half = edge_height // 2, edge_width // 2
+    edge_height_half, edge_width_half = edge_height / 2, edge_width / 2
     #
     d = np.sqrt(np.square(edge_height) + np.square(edge_width))
     dtheta = 180 / num_thetas
@@ -349,19 +353,20 @@ def line_detection_vectorized(image, edge_image, num_rhos=180, num_thetas=180, t
     # subplot4 = figure.add_subplot(1, 4, 4)
     # subplot4.imshow(image)
     #
-    edge_points = np.argwhere(edge_image != 0)
-    edge_points = edge_points - np.array([[edge_height_half, edge_width_half]])
-    #
-    rho_values = np.matmul(edge_points, np.array([sin_thetas, cos_thetas]))
-    #
-    accumulator, theta_vals, rho_vals = np.histogram2d(
-        np.tile(thetas, rho_values.shape[0]),
-        rho_values.ravel(),
-        bins=[thetas, rhos]
-    )
-    accumulator = np.transpose(accumulator)
+    """"
+    # edge_points = np.argwhere(edge_image != 0)
+    # edge_points = edge_points - np.array([[edge_height_half, edge_width_half]])
+    # #
+    # rho_values = np.matmul(edge_points, np.array([sin_thetas, cos_thetas]))
+    # #
+    # accumulator, theta_vals, rho_vals = np.histogram2d(
+    #     np.tile(thetas, rho_values.shape[0]),
+    #     rho_values.ravel(),
+    #     bins=[thetas, rhos]
+    # )
+    # accumulator = np.transpose(accumulator)
     # lines = np.argwhere(accumulator > t_count)
-
+"""
     # for line in lines:
     #     y, x = line
     #     rho = rhos[y]
@@ -377,6 +382,17 @@ def line_detection_vectorized(image, edge_image, num_rhos=180, num_thetas=180, t
     #     cv2.line(out, (x1, y1), (x2, y2), 125, 1)
     #     # subplot3.plot([theta], [rho], marker='o', color="yellow")
     #     # subplot4.add_line(mlines.Line2D([x1, x2], [y1, y2]))
+
+    for y in range(edge_height):
+        for x in range(edge_width):
+            if edge_image[y][x] != 0:
+                edge_point = [y - edge_height_half, x - edge_width_half]
+                # ys, xs = [], []
+                for theta_idx in range(len(thetas)):
+                    rho = (edge_point[1] * cos_thetas[theta_idx]) + (edge_point[0] * sin_thetas[theta_idx])
+                    # theta = thetas[theta_idx]
+                    rho_idx = np.argmin(np.abs(rhos - rho))
+                    accumulator[rho_idx][theta_idx] += 1
 
     rho1, theta1 = np.where(accumulator[:, :(len(thetas) // 2) + 1] == np.amax(accumulator[:, :(len(thetas) // 2) + 1]))
     a1 = np.cos(np.deg2rad(thetas[theta1]))
@@ -400,7 +416,7 @@ def line_detection_vectorized(image, edge_image, num_rhos=180, num_thetas=180, t
     y22 = int(y02 - 1000 * (a2))
 
     X, Y = point_of_intersection(x11, y11, x21, y21, x12, y12, x22, y22)
-    cv2.line(out, (x11, y11), (X, Y), 0, 8)
+    cv2.line(out, (x11, y11), (X, Y), 255, 8)
     cv2.line(out, (x12, y12), (X, Y), 255, 8)
 
     # subplot3.plot([theta], [rho], marker='o', color="yellow")
@@ -437,11 +453,14 @@ def main():
     path1 = 'White Lane.mp4'
     path2 = 'Yello Lane.mp4'
     path3 = 'Challenge.mp4'
-
+    start = datetime.now()
     frames = ReadVideo(path1)  # step1
-    out = cv2.VideoWriter('video1', cv2.VideoWriter_fourcc(*'mp4v'), 20.0, frames[0].shape)
-
+    out = cv2.VideoWriter('video1', cv2.VideoWriter_fourcc(*'mp4v'), 20.0, frames[0].shape[:2])
+    print('start')
+    i = 0
     for frame in frames:
+        i = i + 1
+
         # start = datetime.now()
         hsvImg = RGB2HSV(frame)  # step2
         # print("RGB2HSV", datetime.now() - start)
@@ -457,39 +476,16 @@ def main():
         # start = datetime.now()
         mask = MaskGrayImage(grayImg, thresholdImg)  # step5
 
-        gaussian = Gaussian(mask, 15, 3)
+        gaussian = Gaussian(mask, 3, 3)
         canny = CannyEdgeDetection(gaussian, 200, 50)  # step7
 
         cannyMask = MaskGrayImage(grayImg, canny)  # step8
         houghTransform = line_detection_vectorized(frame, cannyMask)
-
+        # plt.imshow(houghTransform)
+        # plt.show()
+        print(i, len(frames), datetime.now() - start)
         out.write(houghTransform)
     out.release()
-    # plt.imshow(cannyMask, cmap='gray')
-    # plt.imshow(canny, cmap='gray')
-    # plt.show()
-
-    # edges = cv2.Canny(gaussian2,100,200)
-    # plt.imshow(edges, cmap='gray')
-
-    # plt.imshow(gaussian2,cmap='gray')
-    # f, axarr = plt.subplots(3, 2)
-    #
-    # axarr[0, 0].imshow(frame[0])
-    # axarr[0, 1].imshow(thresholdImg, cmap='gray')
-    #
-    # axarr[1, 0].imshow(mask, cmap='gray')
-    # axarr[1, 1].imshow(gaussian, cmap='gray')
-    #
-    # axarr[2, 0].imshow(canny, cmap='gray')
-    # axarr[2, 1].imshow(cannyMask, cmap='gray')
-    # plt.show()
-    #
-    # # cv2.imwrite('canny1.jpg', canny)
-    # plt.imshow(cannyMask, cmap='gray')
-    # plt.show()
-
-    # print("total", datetime.now() - start0)
 
 
 if __name__ == '__main__':

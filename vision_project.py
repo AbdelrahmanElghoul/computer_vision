@@ -326,7 +326,7 @@ def HoughTransofrm(image):
 
 
 # step 9
-def line_detection_vectorized(image, edge_image, num_rhos=180, num_thetas=180, t_count=100):
+def HoughLineDetection(image, edge_image, num_rhos=180, num_thetas=180, t_count=100):
     out = np.copy(image)
     edge_height, edge_width = edge_image.shape[:2]
     edge_height_half, edge_width_half = edge_height / 2, edge_width / 2
@@ -454,7 +454,7 @@ def main():
     path2 = 'Yello Lane.mp4'
     path3 = 'Challenge.mp4'
     start = datetime.now()
-    frames = ReadVideo(path1)  # step1
+    frames = ReadVideo(path3)  # step1
     out = cv2.VideoWriter('video1', cv2.VideoWriter_fourcc(*'mp4v'), 20.0, frames[0].shape[:2])
     print('start')
     i = 0
@@ -480,9 +480,9 @@ def main():
         canny = CannyEdgeDetection(gaussian, 200, 50)  # step7
 
         cannyMask = MaskGrayImage(grayImg, canny)  # step8
-        houghTransform = line_detection_vectorized(frame, cannyMask)
-        # plt.imshow(houghTransform)
-        # plt.show()
+        houghTransform = HoughLineDetection(frame, cannyMask)
+        plt.imshow(houghTransform)
+        plt.show()
         print(i, len(frames), datetime.now() - start)
         out.write(houghTransform)
     out.release()

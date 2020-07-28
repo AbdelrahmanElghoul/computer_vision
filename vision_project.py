@@ -435,7 +435,7 @@ def HoughLineDetection(image, edge_image, num_rhos=180, num_thetas=180, t_count=
     # plt.show()
     return out
 
-
+#step 9 helper
 def point_of_intersection(Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2):
     Ma = (Ay2 - Ay1) / (Ax2 - Ax1)
     Mb = (By2 - By1) / (Bx2 - Bx1)

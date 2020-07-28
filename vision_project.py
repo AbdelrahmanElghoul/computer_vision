@@ -23,7 +23,7 @@ import cv2
 from scipy import interpolate
 
 
-# step1 done
+# step1
 def ReadVideo(path):
     vidcap = cv2.VideoCapture(path)
     success, image = vidcap.read()
@@ -95,12 +95,12 @@ def rgb_to_hsv(r, g, b):
     return h, s, v
 
 
-# step3 Not sure
+# step3
 def RGB2Gray(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
 
-# step4  done
+# step4
 def HSV_Threshold(image):
     # aH = image[:, :, 0]
     # aS = image[:, :, 1]
@@ -139,7 +139,7 @@ def HSV_Thresholding(image, rangeFrom, rangeTo):
     return out.astype(int)
 
 
-# step5 not sure
+# step5
 def MaskGrayImage(image, mask):
     result = np.copy(image)
     (height, width) = image.shape[:2]
